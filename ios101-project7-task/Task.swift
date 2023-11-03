@@ -5,7 +5,7 @@
 import UIKit
 
 // The Task model
-struct Task {
+struct Task: Codable {
 
     // The task's title
     var title: String
@@ -44,33 +44,65 @@ struct Task {
 
     // The date the task was created
     // This property is set as the current date whenever the task is initially created.
-    let createdDate: Date = Date()
+    var createdDate: Date = Date()
 
     // An id (Universal Unique Identifier) used to identify a task.
-    let id: String = UUID().uuidString
+    var id: String = UUID().uuidString
 }
 
 // MARK: - Task + UserDefaults
 extension Task {
 
-
     // Given an array of tasks, encodes them to data and saves to UserDefaults.
     static func save(_ tasks: [Task]) {
 
         // TODO: Save the array of tasks
-    }
+        let defaults = UserDefaults.standard
+        let encodedData = try! JSONEncoder().encode(tasks)
+        defaults.set(encodedData, forKey: "tasksKey")
+}
 
     // Retrieve an array of saved tasks from UserDefaults.
     static func getTasks() -> [Task] {
         
         // TODO: Get the array of saved tasks from UserDefaults
+        let defaults = UserDefaults.standard
+        if let data = defaults.data(forKey: "tasksKey"){
+            let decodedContacts = try! JSONDecoder().decode([Task].self, from: data)
+            return decodedContacts
+        } else {
+            return []
+        }
 
-        return [] // 👈 replace with returned saved tasks
     }
 
     // Add a new task or update an existing task with the current task.
     func save() {
 
         // TODO: Save the current task
+        var saved_tasks = Task.getTasks()
+        
+        var i = 0
+        var inserted = false
+        while (i < saved_tasks.count) {
+            // check if the current task (self) already exists in tasks array
+            if self.id == saved_tasks[i].id {
+                // update existing task: delete old and insert new
+                saved_tasks.remove(at: i)
+                // since we're creating an instance method on a Task, self will refer to the specific task the method is being called on and we can pass that into the insert method.
+                saved_tasks.insert(self, at: i)
+                inserted = true
+                break
+            }
+            
+            i += 1
+        }
+        
+        if inserted == false {
+            // add new task to the end of the array
+            saved_tasks.append(self)
+        }
+        
+        Task.save(saved_tasks) // save the updated tasks array to UserDefaults
     }
 }
